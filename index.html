@@ -202,10 +202,6 @@ nav button[aria-current=page] svg{color:var(--gold)}
 
 <main>
 <section class="view" id="v-calc">
-  <div class="soon" id="soonBox" hidden>
-    <b>Flipkart calculator is coming soon</b>
-    <div class="hint">Flipkart's commission, collection and shipping fee tables will be added in the next update. Switch to Amazon or Own website for now.</div>
-  </div>
   <div class="card" id="calcCard">
     <div class="field"><label for="cat">Category</label><select id="cat"></select></div>
     <div class="field"><label for="line">Product</label><select id="line"></select></div>
@@ -216,6 +212,19 @@ nav button[aria-current=page] svg{color:var(--gold)}
         <button data-ch="es" aria-pressed="true">Easy Ship</button>
         <button data-ch="fba" aria-pressed="false">FBA</button>
         <button data-ch="self" aria-pressed="false">Self Ship</button>
+      </div>
+    </div>
+    <div class="field" id="fkWrap" hidden>
+      <span class="label">Fulfilment</span>
+      <div class="seg" id="fkSeg">
+        <button data-fch="nfbf" aria-pressed="true">You ship (NFBF)</button>
+        <button data-fch="fbf" aria-pressed="false">Flipkart ships (FBF)</button>
+      </div>
+      <span class="label" style="margin-top:4px">Delivery zone</span>
+      <div class="seg" id="zoneSeg">
+        <button data-zone="local" aria-pressed="false">Local</button>
+        <button data-zone="zonal" aria-pressed="false">Zonal</button>
+        <button data-zone="national" aria-pressed="true">National</button>
       </div>
     </div>
     <div class="row">
@@ -383,6 +392,7 @@ nav button[aria-current=page] svg{color:var(--gold)}
         <div class="seg" id="pkSeg">
           <button data-pch="es" aria-pressed="true">Easy Ship</button>
           <button data-pch="fba" aria-pressed="false">FBA</button>
+          <button data-pch="fk" aria-pressed="false">Flipkart</button>
         </div>
       </div>
     </div>
@@ -438,7 +448,7 @@ nav button[aria-current=page] svg{color:var(--gold)}
   </div>
   <div class="card">
     <div class="cardhead"><h2>Settings</h2><button class="eye" data-eye="setNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
-    <div class="hint" id="setNote" hidden>These are the default numbers every calculation starts from. They come from your 500 GSM research sheet (verified on Seller Central, 26 Oct 2026) and Amazon.in's fee schedules effective Mar–Sep 2026. Change anything that differs for your account; a one-off change for a single calculation is better made on the Cost breakdown instead.</div>
+    <div class="hint" id="setNote" hidden>These are the default numbers every calculation starts from. They come from your 500 GSM research sheet (verified on Seller Central, 26 Oct 2026) and Amazon.in's fee schedules effective Mar–Sep 2026. Change anything that differs for your account; a one-off change for a single calculation is better made on the Cost breakdown instead.<br><br><b>Flipkart:</b> the 0% commission below &#8377;1,000 and the tier-based fixed fee are confirmed on seller.flipkart.com; the rest of the Flipkart numbers are the best public estimates as of Nov 2026, because the full rate card is only visible inside Seller Hub. Once your seller account is open, copy the real figures in here &mdash; every field is editable.</div>
     <div id="setForm" style="display:grid;gap:10px"></div>
     <div class="btns"><button class="btn ghost small" id="resetSet">Restore defaults</button></div>
   </div>
@@ -461,14 +471,14 @@ nav button[aria-current=page] svg{color:var(--gold)}
       <li><b>Start with what the customer pays</b> — your selling price, minus any coupon.</li>
       <li><b>Take out product GST</b> — 5% up to ₹2,500, 18% above it. This money is collected for the government, so it was never yours. What is left is your <b>net revenue</b>.</li>
       <li><b>Take out the purchase cost</b> — what you pay your supplier for the piece.</li>
-      <li><b>Take out Amazon's charges</b> — referral fee, closing fee, weight handling, and pick &amp; pack plus storage on FBA.</li>
+      <li><b>Take out the marketplace's charges</b> — on Amazon: referral fee, closing fee, weight handling, plus pick &amp; pack and storage on FBA. On Flipkart: commission, fixed fee, shipping, collection fee on COD orders, plus pick &amp; pack and storage on FBF.</li>
       <li><b>Take out your own costs</b> — packaging, advertising, a returns allowance, and anything you added under Other expenses.</li>
     </ol>
     <div class="hint">Whatever is left is your <b>profit per unit</b>. Margin is that profit divided by the selling price.</div>
     <div class="eg" id="howEg"></div>
     <div class="hint" id="howNote" hidden><b>The finer points.</b><br>
       • GST is judged on the price <i>after</i> the coupon, so a ₹2,600 price with a ₹200 coupon stays in the 5% band.<br>
-      • Amazon charges 18% GST on top of all its own fees. With ITC on, that 18% is left out of the costs here because you claim it back as credit — same for the supplier's 5% on your purchase cost. Turn ITC off in Settings and everything is counted with its GST. The Ladder tab shows the whole GST picture for any price.<br>
+      • Amazon and Flipkart charge 18% GST on top of all their own fees. With ITC on, that 18% is left out of the costs here because you claim it back as credit — same for the supplier's 5% on your purchase cost. Turn ITC off in Settings and everything is counted with its GST. The Ladder tab shows the whole GST picture for any price.<br>
       • Shipping is an estimate from chargeable weight &mdash; the higher of actual weight and volumetric (L×B×H cm ÷ 5000) &mdash; using the weight slabs in Settings, scaled by the calibration factor. Whenever you have the real quote, type it straight into the shipping line on the Cost breakdown.<br>
       • On your own website, RTO loss assumes a failed order costs you shipping both ways plus the packaging.</div>
   </div>

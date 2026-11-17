@@ -112,6 +112,14 @@ const DEFAULTS = {
   selfShip:0,
   pack:25, packKg:0.3, amzAds:8, amzRet:3,
   gw:2, webAds:12, rto:10, webShip:0,
+  fkLine:1000, fkC1:0, fkC2:15,
+  fkFix1:16, fkFix2:24, fkFix3:47, fkTier:10, fkFbfFix:-3,
+  fkCodShare:40, fkCodFee:2,
+  fkN1:40, fkN2:62, fkN3:85, fkN4:125, fkN5:25,
+  fkZ1:0, fkZ2:40, fkZ3:62, fkZ4:98, fkZ5:18,
+  fkL1:0, fkL2:28, fkL3:48, fkL4:75, fkL5:12,
+  fkCal:1, fkFbfCal:1, fkPick:20, fkStore:30,
+  fkAds:5, fkRet:3,
 };
 const SET_GROUPS = [
   ["Business",[
@@ -150,6 +158,31 @@ const SET_GROUPS = [
     ["gw","Payment gateway %",""],["webAds","Meta / Google ads % of price",""],
     ["rto","RTO % of orders returned undelivered","Higher on COD"],
     ["webShip","Shipping charged to customer ₹ (0 = free shipping)",""],
+  ]],
+  ["Flipkart · commission and fixed fee",[
+    ["fkLine","Zero-commission line ₹","Official: 0% commission on anything priced below ₹1,000 (seller.flipkart.com, Nov 2025 rate card)"],
+    ["fkC1","Commission % at or below the line","Official 0%"],
+    ["fkC2","Commission % above the line","Home furnishing: public calculators quote 14–15%; the exact rate for bedding is in Seller Hub"],
+    ["fkFix1","Fixed fee ₹ – price up to 500","Base rate, estimate"],
+    ["fkFix2","Fixed fee ₹ – 501 to 1,000","Base rate, estimate"],
+    ["fkFix3","Fixed fee ₹ – above 1,000","Base rate, estimate (older card: ₹50–55)"],
+    ["fkTier","Your tier adjustment ₹","Official: Bronze +10, Silver and Gold 0, Platinum −15. New sellers start at Bronze"],
+    ["fkFbfFix","FBF fixed-fee difference ₹","FBF orders carry a slightly lower fixed fee; estimate"],
+  ]],
+  ["Flipkart · shipping ₹ per shipment (ex-GST)",[
+    ["fkN1","National – up to 500 g",""],["fkN2","National – 500 g to 1 kg",""],["fkN3","National – 1 to 2 kg",""],["fkN4","National – 2 to 5 kg",""],["fkN5","National – each kg above 5",""],
+    ["fkZ1","Zonal – up to 500 g","Official: free under 500 g, local and zonal"],["fkZ2","Zonal – 500 g to 1 kg",""],["fkZ3","Zonal – 1 to 2 kg",""],["fkZ4","Zonal – 2 to 5 kg",""],["fkZ5","Zonal – each kg above 5",""],
+    ["fkL1","Local – up to 500 g",""],["fkL2","Local – 500 g to 1 kg",""],["fkL3","Local – 1 to 2 kg",""],["fkL4","Local – 2 to 5 kg",""],["fkL5","Local – each kg above 5",""],
+    ["fkCal","Calibration factor","Public estimates; once you see a real shipping fee on a settlement, divide it by what this shows and type the result here"],
+  ]],
+  ["Flipkart · FBF, collection, ads, returns",[
+    ["fkPick","FBF pick & pack per unit ₹","Estimate ₹14–26"],
+    ["fkStore","FBF storage per unit sold ₹","Estimate; charged per cubic foot per month in Seller Hub"],
+    ["fkFbfCal","FBF shipping factor","FBF shipping vs the table above; 1 = same"],
+    ["fkCodShare","Orders paid by COD %","Collection fee applies to COD only; prepaid is free since the 2024 rate card"],
+    ["fkCodFee","COD collection fee %","Public figures 1.8–2.5%"],
+    ["fkAds","Advertising % of price","Flipkart PLA"],
+    ["fkRet","Returns / damage allowance % of price","Flipkart charges reverse shipping on returns, so keep this honest"],
   ]],
 ];
 

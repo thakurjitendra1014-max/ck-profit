@@ -11,7 +11,7 @@ state.misc=state.misc||[];
 state.rateMap=state.rateMap||Object.assign({},RATESEED);
 if(!state.m150){state.rateMap=Object.assign({},RATESEED,state.rateMap);state.m150=1}
 state.pk=Object.assign({pid:"500-D",ch:"es",unit:"cm",wunit:"kg"},state.pk||{});
-state.sel=Object.assign({mkt:"amazon",pid:"500-S",ch:"es",sp:2199,coupon:0,ov:{}},state.sel||{});
+state.sel=Object.assign({mkt:"amazon",pid:"500-S",ch:"es",fch:"nfbf",zone:"national",sp:2199,coupon:0,ov:{}},state.sel||{});
 const S=()=>Object.assign({},DEFAULTS,state.set);
 
 function products(){return CATALOG.map(p=>Object.assign({},p)).concat(state.custom.map(p=>Object.assign({},p,{custom:true})))}
@@ -46,8 +46,22 @@ function dw(kg){return +(kg/uwf()).toFixed(state.pk.wunit==="g"?0:state.pk.wunit
 function billedKg(kg){return Math.max(0.5,Math.ceil(kg*2)/2)}
 function volKg(l,b,h){return (+l||0)*(+b||0)*(+h||0)/5000}
 function shipFee(kg,ch,s){s=s||S();
+  if(ch==="fk")return fkShip(kg,"national","nfbf",s);
   return ch==="fba"?Math.round(slab(kg,s.fbaW1,s.fbaW2,s.fbaW3,s.fbaW4,s.fbaW5)*s.fbaCal)
                    :Math.round(slab(kg,s.esW1,s.esW2,s.esW3,s.esW4,s.esW5)*s.esCal)}
+function fkSlab(kg,w1,w2,w3,w4,w5){kg=Math.max(0.5,Math.ceil(kg*2)/2);if(kg<=0.5)return w1;if(kg<=1)return w2;if(kg<=2)return w3;if(kg<=5)return w4;return w4+w5*Math.ceil(kg-5)}
+function fkShip(kg,zone,fch,s){s=s||S();const z=zone==="local"?"L":zone==="zonal"?"Z":"N";
+  const base=fkSlab(kg,+s["fk"+z+"1"]||0,+s["fk"+z+"2"]||0,+s["fk"+z+"3"]||0,+s["fk"+z+"4"]||0,+s["fk"+z+"5"]||0)*(+s.fkCal||1);
+  return Math.round(base*(fch==="fbf"?(+s.fkFbfCal||1):1))}
+function fkFixed(price,fch,s){s=s||S();const b=price<=500?s.fkFix1:price<=1000?s.fkFix2:s.fkFix3;
+  return Math.max(0,Math.round((+b||0)+(+s.fkTier||0)+(fch==="fbf"?(+s.fkFbfFix||0):0)))}
+function fkComm(price,s){s=s||S();return price<=(+s.fkLine||0)?(+s.fkC1||0):(+s.fkC2||0)}
+const ZONE={local:"Local",zonal:"Zonal",national:"National"};
+function chanName(mkt,ch){
+  if(mkt==="amazon")return "Amazon "+(CH[ch]||"");
+  if(mkt==="flipkart"){const [f,z]=String(ch||"").split("-");return "Flipkart "+(f==="fbf"?"FBF":"NFBF")+" \u00b7 "+(ZONE[z]||"National")}
+  return "Own website";
+}
 function boxGuess(kg){const V=Math.max(1,kg)*5000,h=Math.cbrt(V/3.1);
   return [+(2*h).toFixed(1),+(1.55*h).toFixed(1),+h.toFixed(1)]}
 function cheaperTiers(curKg,floorKg,ch,s){
@@ -77,6 +91,18 @@ function defaultLines(p,ch,mkt,eff,s){
     if(ch!=="fba") L.push({k:"pack",label:"Packaging",sub:"incl. GST",type:"amt",val:s.pack,gstable:true,incl:true});
     L.push({k:"ads",label:"Advertising",sub:"% or ₹ per unit",type:"pct",val:s.amzAds,gstable:true});
     L.push({k:"ret",label:"Returns / damage allowance",sub:"% or ₹ per unit",type:"pct",val:s.amzRet});
+  } else if(mkt==="flipkart"){
+    const [fch,zone]=String(ch||"nfbf-national").split("-"), fbf=fch==="fbf";
+    L.push({k:"fkc",label:"Flipkart commission",sub:(eff<=s.fkLine?"0% below ₹"+(+s.fkLine).toLocaleString("en-IN"):"above ₹"+(+s.fkLine).toLocaleString("en-IN"))+" · % or ₹",type:"pct",val:fkComm(eff,s),gstable:true});
+    L.push({k:"fkfix",label:"Fixed fee",sub:(s.fkTier>0?"Bronze tier":s.fkTier<0?"Platinum tier":"Silver / Gold tier")+(fbf?" · FBF":""),type:"amt",val:fkFixed(eff,fch,s),gstable:true});
+    L.push({k:"ship",label:"Flipkart shipping",sub:kg+" kg · "+(ZONE[zone]||"National")+" · ex-GST",type:"amt",val:fkShip(kg,zone,fch,s),gstable:true});
+    if(fbf){
+      L.push({k:"pick",label:"FBF pick & pack",sub:"ex-GST",type:"amt",val:+s.fkPick||0,gstable:true});
+      L.push({k:"store",label:"FBF storage per unit",sub:"ex-GST",type:"amt",val:+s.fkStore||0,gstable:true});
+    } else L.push({k:"pack",label:"Packaging",sub:"incl. GST",type:"amt",val:s.pack,gstable:true,incl:true});
+    L.push({k:"fkcol",label:"Collection fee",sub:"COD "+(+s.fkCodShare||0)+"% of orders · "+(+s.fkCodFee||0)+"% each",type:"pct",val:+((+s.fkCodShare||0)*(+s.fkCodFee||0)/100).toFixed(2),gstable:true});
+    L.push({k:"ads",label:"Advertising",sub:"% or ₹ per unit",type:"pct",val:s.fkAds,gstable:true});
+    L.push({k:"ret",label:"Returns / damage allowance",sub:"% or ₹ per unit",type:"pct",val:s.fkRet});
   } else {
     L.push({k:"gw",label:"Payment gateway",sub:"% or ₹",type:"pct",val:s.gw,gstable:true});
     L.push({k:"ship",label:"Courier",sub:kg+" kg · incl. GST",type:"amt",val:Math.round(slab(kg,s.esW1,s.esW2,s.esW3,s.esW4,s.esW5)*s.esCal*1.18),gstable:true,incl:true});
@@ -149,7 +175,7 @@ const ICON={
   flipkart:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" fill="#2874f0"/><path d="M9 7h7l-.6 2.6H11l-.5 2.2h4.3l-.6 2.6H9.9L9 17.5H6.3z" fill="#ffe500"/></svg>',
   web:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>'
 };
-function chForMkt(){return state.sel.mkt==="amazon"?state.sel.ch:"web"}
+function chForMkt(){const m=state.sel.mkt;return m==="amazon"?state.sel.ch:m==="flipkart"?(state.sel.fch||"nfbf")+"-"+(state.sel.zone||"national"):"web"}
 
 function fillSelect(el,opts,val){el.innerHTML=opts.map(o=>`<option value="${o[0]}" ${o[0]===val?"selected":""}>${o[1]}</option>`).join("")}
 function renderPicker(){
@@ -161,8 +187,10 @@ function renderPicker(){
   fillSelect($("size"),ps.filter(p=>p.cat===cur.cat&&p.line===cur.line).map(p=>[p.id,p.size]),cur.id);
   $("mkt").value=state.sel.mkt; $("mktIcon").innerHTML=ICON[state.sel.mkt];
   $("fulfilWrap").hidden=state.sel.mkt!=="amazon";
-  const soon=state.sel.mkt==="flipkart"; $("soonBox").hidden=!soon; $("calcCard").hidden=soon;
+  $("fkWrap").hidden=state.sel.mkt!=="flipkart";
   document.querySelectorAll("#chSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.ch===state.sel.ch));
+  document.querySelectorAll("#fkSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.fch===(state.sel.fch||"nfbf")));
+  document.querySelectorAll("#zoneSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.zone===(state.sel.zone||"national")));
 }
 let lastSig="";
 function paintLines(r){
@@ -191,7 +219,6 @@ function paintLines(r){
 }
 function renderCalc(){
   const p=getP(state.sel.pid),s=S(),{sp,coupon,ov,mkt}=state.sel,ch=chForMkt();
-  if(mkt==="flipkart"){["verdict"].forEach(i=>$(i).className="verdict");$("verdict").innerHTML="";$("breakdown").innerHTML="";lastSig="";return}
   const act=document.activeElement;
   if($("sp")!==act)$("sp").value=sp;
   if($("coupon")!==act)$("coupon").value=coupon;
@@ -215,7 +242,7 @@ function renderCalc(){
   const v=$("verdict");v.className="verdict "+t;
   const word={good:"Healthy",warn:"Thin",bad:r.profit<0?"Loss":"Very thin"}[t];
   v.innerHTML=`<div class="label">Profit per unit</div><div class="big">${rs(r.profit)}</div>
-    <div class="meta"><span class="pill ${t}">${word} · ${pct(r.margin)} margin</span><span>${p.line} · ${p.size}</span><span>${MKT[mkt]}${mkt==="amazon"?" "+CH[ch]:""}</span>`+
+    <div class="meta"><span class="pill ${t}">${word} · ${pct(r.margin)} margin</span><span>${p.line} · ${p.size}</span><span>${chanName(mkt,ch)}</span>`+
     (hasCost(p)||ov.cost!=null?"":`<span class="pill bad">Purchase cost not set</span>`)+`</div>`;
   const be=priceFor(p,ch,mkt,coupon,null,ov,s),f1=priceFor(p,ch,mkt,coupon,s.tMargin1/100,ov,s),f2=priceFor(p,ch,mkt,coupon,s.tMargin2/100,ov,s);
   $("sFloorL").textContent=`Price for ${s.tMargin1}%`;$("sGoodL").textContent=`Price for ${s.tMargin2}%`;
@@ -254,9 +281,9 @@ function summaryText(r){
   const p=getP(state.sel.pid),s=S(),{sp,coupon,mkt}=state.sel,ch=chForMkt();
   const title=($("calcName")&&$("calcName").value.trim())||"";
   const SHORT={cost:"Purchase cost",ref:"Referral",close:"Closing fee",
-    ship:mkt==="web"?"Courier":(ch==="es"?"Easy Ship":ch==="fba"?"FBA shipping":"Courier"),
-    pick:"Pick & pack",store:"FBA storage",pack:"Packaging",ads:"Ads",ret:"Returns",
-    gw:"Gateway",rto:"RTO loss"};
+    ship:mkt==="web"?"Courier":mkt==="flipkart"?"FK shipping":(ch==="es"?"Easy Ship":ch==="fba"?"FBA shipping":"Courier"),
+    pick:"Pick & pack",store:mkt==="flipkart"?"FBF storage":"FBA storage",pack:"Packaging",ads:"Ads",ret:"Returns",
+    gw:"Gateway",rto:"RTO loss",fkc:"Commission",fkfix:"Fixed fee",fkcol:"Collection"};
   const num=v=>Math.abs(Math.round(v)).toLocaleString("en-IN");
   const amt=v=>(v<0?"\u2212\u20b9":"\u20b9")+num(v);
   const rows=[];
@@ -282,7 +309,7 @@ function summaryText(r){
   const head=["*Comforter King \u00b7 Profit calculation*"];
   if(title)head.push("*"+title+"*");
   head.push(p.line+" \u00b7 "+p.size);
-  head.push(MKT[mkt]+(mkt==="amazon"?" "+CH[ch]:""));
+  head.push(chanName(mkt,ch));
   const foot=["*Profit "+amt(r.profit)+" per unit \u00b7 "+pct(r.margin)+" margin*"];
   const be=priceFor(p,ch,mkt,coupon,null,state.sel.ov,s);
   if(be)foot.push("Break-even price: "+amt(be));
@@ -305,21 +332,23 @@ function renderHist(){
 }
 function renderLadder(){
   const p=getP(state.sel.pid),s=S(),{coupon,sp,ov,mkt}=state.sel,ch=chForMkt();
-  const m=mkt==="flipkart"?"amazon":mkt;
-  $("ladTitle").textContent=`Price ladder · ${p.line} ${p.size} · ${MKT[m]}${m==="amazon"?" "+CH[ch]:""}`;
+  const m=mkt;
+  $("ladTitle").textContent=`Price ladder · ${p.line} ${p.size} · ${chanName(m,ch)}`;
   const from=+$("lFrom").value||999,step=Math.max(10,+$("lStep").value||100);
   const set=new Set();for(let i=0;i<22;i++)set.add(from+i*step);set.add(sp);set.add(s.gstLine-1);
   $("ladBody").innerHTML=[...set].sort((a,b)=>a-b).map(x=>{const r=calc(p,ch,m,x,coupon,ov,s),t=tone(r.margin);
     const g=gstView(p,ch,m,x,coupon,ov,s,r);
     return `<tr class="${x===sp?"me":""}"><td>${rs(x)}</td><td>${rs(r.eff)}</td><td class="${t[0]}">${rs(r.profit)}</td><td class="${t[0]}">${pct(r.margin)}</td><td>${rs(g.net)}</td></tr>`}).join("");
-  const rows=[["amazon","es","Amazon Easy Ship"],["amazon","fba","Amazon FBA"],["amazon","self","Amazon Self Ship"],["web","web","Own website"]];
+  const zone=state.sel.zone||"national";
+  const rows=[["amazon","es","Amazon Easy Ship"],["amazon","fba","Amazon FBA"],["amazon","self","Amazon Self Ship"],
+    ["flipkart","nfbf-"+zone,"Flipkart NFBF · "+ZONE[zone]],["flipkart","fbf-"+zone,"Flipkart FBF · "+ZONE[zone]],["web","web","Own website"]];
   $("chBody").innerHTML=rows.map(([mk,c,n])=>{const r=calc(p,c,mk,sp,coupon,{},s),be=priceFor(p,c,mk,coupon,null,{},s),t=tone(r.margin);
     return `<tr class="${mk===m&&(mk==="web"||c===ch)?"me":""}"><td>${n}</td><td class="${t[0]}">${rs(r.profit)}</td><td class="${t[0]}">${pct(r.margin)}</td><td>${be?rs(be):"–"}</td></tr>`}).join("");
   renderGst();
 }
 function renderGst(){
   const p=getP(state.sel.pid),s=S(),{coupon,sp,ov,mkt}=state.sel,ch=chForMkt();
-  const m=mkt==="flipkart"?"amazon":mkt;
+  const m=mkt;
   const g=gstView(p,ch,m,sp,coupon,ov,s);
   const owe=g.net>=0;
   $("gstTitle").textContent="GST at "+rs(g.pays);
@@ -488,7 +517,7 @@ function renderPack(){
   $("pkAct").textContent=A?dw(A)+" "+wu:"\u2013";
   $("pkBill").textContent=bill.toFixed(1)+" kg";
   const v=$("pkVerdict");v.className="verdict "+(vol>A?"warn":"good");
-  v.innerHTML=`<div class="label">${ch==="fba"?"FBA":"Easy Ship"} weight handling</div><div class="big">${rs(fee)}</div>
+  v.innerHTML=`<div class="label">${ch==="fba"?"FBA":ch==="fk"?"Flipkart (national, you ship)":"Easy Ship"} weight handling</div><div class="big">${rs(fee)}</div>
     <div class="meta"><span class="pill ${vol>A?"warn":"good"}">billed at ${bill.toFixed(1)} kg</span><span>${rs(Math.round(fee*1.18))} with GST</span><span>${du(L)}\u00d7${du(B)}\u00d7${du(H)} ${state.pk.unit}</span></div>`;
   const cm3=Math.round(L*B*H);
   $("pkDrive").innerHTML=!vol?"Enter the box dimensions to see the chargeable weight."
@@ -581,6 +610,8 @@ $("size").onchange=e=>{pick(e.target.value);rerender()};
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
   if(b.dataset.ch){state.sel.ch=b.dataset.ch;state.sel.ov={};rerender()}
+  else if(b.dataset.fch){state.sel.fch=b.dataset.fch;state.sel.ov={};rerender()}
+  else if(b.dataset.zone){state.sel.zone=b.dataset.zone;delete state.sel.ov.ship;rerender()}
   else if(b.dataset.pch){state.pk.ch=b.dataset.pch;persist();renderPack()}
   else if(b.dataset.pkcat){const q=products().find(x=>x.cat===b.dataset.pkcat);pkPick(q&&q.id)}
   else if(b.dataset.pkline){pkLinePick(b.dataset.pkline)}
@@ -594,7 +625,9 @@ document.addEventListener("click",e=>{
     const el=$("dRenIn");if(el){el.focus();el.select()}}
   else if(b.dataset.sp){state.sel.sp=+b.dataset.sp;rerender()}
   else if(b.dataset.v){show(b.dataset.v)}
-  else if(b.dataset.load!=null){const x=state.hist[+b.dataset.load];Object.assign(state.sel,{pid:x.pid,mkt:x.mkt||"amazon",ch:x.ch,sp:x.sp,coupon:x.coupon,ov:x.ov||{}});rerender();scrollTo({top:0,behavior:"smooth"})}
+  else if(b.dataset.load!=null){const x=state.hist[+b.dataset.load];const o={pid:x.pid,mkt:x.mkt||"amazon",sp:x.sp,coupon:x.coupon,ov:x.ov||{}};
+    if(o.mkt==="flipkart"){const [f,z]=String(x.ch||"").split("-");o.fch=f||"nfbf";o.zone=z||"national"}else o.ch=x.ch;
+    Object.assign(state.sel,o);rerender();scrollTo({top:0,behavior:"smooth"})}
   else if(b.dataset.del!=null){state.hist.splice(+b.dataset.del,1);state.renIdx=null;persist();renderHist()}
   else if(b.dataset.rendone!=null){const i=+b.dataset.rendone,v=$("renIn").value.trim();
     if(v)state.hist[i].title=v;else delete state.hist[i].title;
@@ -658,9 +691,9 @@ document.addEventListener("click",e=>{const b=e.target.closest(".eye");if(!b)ret
   const show=n.hasAttribute("hidden");n.hidden=!show;b.setAttribute("aria-expanded",show?"true":"false")});
 $("resetOv").onclick=()=>{state.sel.ov={};rerender();toast("Edits cleared")};
 $("saveBtn").onclick=()=>{
-  const p=getP(state.sel.pid),{ch,sp,coupon,ov,mkt}=state.sel,r=calc(p,chForMkt(),mkt,sp,coupon,ov);
+  const p=getP(state.sel.pid),{sp,coupon,ov,mkt}=state.sel,ch=chForMkt(),r=calc(p,ch,mkt,sp,coupon,ov);
   const title=$("calcName").value.trim();
-  state.hist.unshift({pid:p.id,title:title||undefined,name:p.line+" · "+p.size,mkt,ch,chan:MKT[mkt]+(mkt==="amazon"?" "+CH[ch]:""),sp,coupon,ov:Object.assign({},ov),profit:r.profit,margin:r.margin,date:new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short"})});
+  state.hist.unshift({pid:p.id,title:title||undefined,name:p.line+" · "+p.size,mkt,ch,chan:chanName(mkt,ch),sp,coupon,ov:Object.assign({},ov),profit:r.profit,margin:r.margin,date:new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short"})});
   state.hist=state.hist.slice(0,40);state.renIdx=null;$("calcName").value="";persist();renderCalc();toast(title?'Saved as "'+title+'"':"Saved");
 };
 $("calcName").addEventListener("input",()=>renderCalc());
@@ -738,4 +771,4 @@ function netBadge(){$("netState").textContent=navigator.onLine?"Comforter King":
 addEventListener("online",netBadge);addEventListener("offline",netBadge);
 netBadge();show("calc");
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
-window.__ck={calc,priceFor,getP,S,volKg,billedKg,shipFee,suppRate,autoCost,costOf,hasCost,gstView};
+window.__ck={calc,priceFor,getP,S,volKg,billedKg,shipFee,suppRate,autoCost,costOf,hasCost,gstView,fkShip,fkFixed,fkComm,chanName};
