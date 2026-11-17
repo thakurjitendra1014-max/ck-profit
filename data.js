@@ -100,6 +100,20 @@ const RATESEED={
   "300 GSM All Season":"g300",
   "300 GSM Reversible (2-in-1)":"g300",
 };
+const FKCATS = [
+  {id:"fk_blanket", mkt:"flipkart", short:"Blankets, quilts, comforters", name:"Blanket (Bed Linen, Blankets & Accessories)", bands:[[2500,0],[null,1]], note:"Comforters and AC comforters sit here. Fixed fee above \u20b91,500 is high because it includes delivery."},
+  {id:"fk_bedsheet", mkt:"flipkart", short:"Bedsheets", name:"Bedsheet (Bed Linen, Blankets & Accessories)", bands:[[2500,0],[11000,1],[null,2]], note:""},
+  {id:"fk_pillow", mkt:"flipkart", short:"Pillows", name:"Pillow", bands:[[2500,0],[6000,1],[null,7.5]], note:""},
+  {id:"fk_curtain", mkt:"flipkart", short:"Curtains", name:"Curtain", bands:[[1000,0],[8000,1],[null,11]], note:""},
+  {id:"fk_duvet", mkt:"flipkart", short:"Duvet covers", name:"Duvet Cover (assumed same as Bedsheet)", bands:[[2500,0],[11000,1],[null,2]], note:"Not read from the rate card; check the Duvet Cover vertical in Seller Hub."},
+];
+const CATFK={"Comforters":"fk_blanket","AC Comforters":"fk_blanket","Bedsheets":"fk_bedsheet","Duvet Covers":"fk_duvet","Pillows":"fk_pillow","Curtains":"fk_curtain"};
+const FKREV={
+  lo:{b:[[134,157,197],[174,213,259],[230,269,326],[275,325,383],[275,325,383],[360,426,495],[623,730,859]]},
+  mid:{b:[[162,185,225],[202,241,287],[258,297,354],[303,353,411],[303,353,411],[388,455,523],[651,758,887]]},
+  hi:{b:[[174,196,236],[213,252,298],[269,308,366],[314,365,422],[314,365,422],[399,466,534],[662,769,898]]},
+  add:{half:[43,51,57],kg:[30,34,41],big:[18,20,23]}
+};
 const CATFEE={"Comforters":"bed","AC Comforters":"bed","Bedsheets":"bed","Duvet Covers":"bed","Pillows":"furn","Curtains":"curt"};
 
 const DEFAULTS = {
@@ -112,14 +126,9 @@ const DEFAULTS = {
   selfShip:0,
   pack:25, packKg:0.3, amzAds:8, amzRet:3,
   gw:2, webAds:12, rto:10, webShip:0,
-  fkLine:1000, fkC1:0, fkC2:15,
-  fkFix1:16, fkFix2:24, fkFix3:47, fkTier:10, fkFbfFix:-3,
-  fkCodShare:40, fkCodFee:2,
-  fkN1:40, fkN2:62, fkN3:85, fkN4:125, fkN5:25,
-  fkZ1:0, fkZ2:40, fkZ3:62, fkZ4:98, fkZ5:18,
-  fkL1:0, fkL2:28, fkL3:48, fkL4:75, fkL5:12,
-  fkCal:1, fkFbfCal:1, fkPick:20, fkStore:30,
-  fkAds:5, fkRet:3,
+  fkTier:10, fkFixB1500:116, fkFixO1500:16, fkFixO1000:20, fkFixO500:10,
+  fkShipFlat:0, fkCodFee:0, fkPick1:14, fkPickKg:5, fkStore:0,
+  fkRevCal:1, fkRetRate:4, fkAds:5,
 };
 const SET_GROUPS = [
   ["Business",[
@@ -159,30 +168,20 @@ const SET_GROUPS = [
     ["rto","RTO % of orders returned undelivered","Higher on COD"],
     ["webShip","Shipping charged to customer ₹ (0 = free shipping)",""],
   ]],
-  ["Flipkart · commission and fixed fee",[
-    ["fkLine","Zero-commission line ₹","Official: 0% commission on anything priced below ₹1,000 (seller.flipkart.com, Nov 2025 rate card)"],
-    ["fkC1","Commission % at or below the line","Official 0%"],
-    ["fkC2","Commission % above the line","Home furnishing: public calculators quote 14–15%; the exact rate for bedding is in Seller Hub"],
-    ["fkFix1","Fixed fee ₹ – price up to 500","Base rate, estimate"],
-    ["fkFix2","Fixed fee ₹ – 501 to 1,000","Base rate, estimate"],
-    ["fkFix3","Fixed fee ₹ – above 1,000","Base rate, estimate (older card: ₹50–55)"],
-    ["fkTier","Your tier adjustment ₹","Official: Bronze +10, Silver and Gold 0, Platinum −15. New sellers start at Bronze"],
-    ["fkFbfFix","FBF fixed-fee difference ₹","FBF orders carry a slightly lower fixed fee; estimate"],
-  ]],
-  ["Flipkart · shipping ₹ per shipment (ex-GST)",[
-    ["fkN1","National – up to 500 g",""],["fkN2","National – 500 g to 1 kg",""],["fkN3","National – 1 to 2 kg",""],["fkN4","National – 2 to 5 kg",""],["fkN5","National – each kg above 5",""],
-    ["fkZ1","Zonal – up to 500 g","Official: free under 500 g, local and zonal"],["fkZ2","Zonal – 500 g to 1 kg",""],["fkZ3","Zonal – 1 to 2 kg",""],["fkZ4","Zonal – 2 to 5 kg",""],["fkZ5","Zonal – each kg above 5",""],
-    ["fkL1","Local – up to 500 g",""],["fkL2","Local – 500 g to 1 kg",""],["fkL3","Local – 1 to 2 kg",""],["fkL4","Local – 2 to 5 kg",""],["fkL5","Local – each kg above 5",""],
-    ["fkCal","Calibration factor","Public estimates; once you see a real shipping fee on a settlement, divide it by what this shows and type the result here"],
-  ]],
-  ["Flipkart · FBF, collection, ads, returns",[
-    ["fkPick","FBF pick & pack per unit ₹","Estimate ₹14–26"],
-    ["fkStore","FBF storage per unit sold ₹","Estimate; charged per cubic foot per month in Seller Hub"],
-    ["fkFbfCal","FBF shipping factor","FBF shipping vs the table above; 1 = same"],
-    ["fkCodShare","Orders paid by COD %","Collection fee applies to COD only; prepaid is free since the 2024 rate card"],
-    ["fkCodFee","COD collection fee %","Public figures 1.8–2.5%"],
+  ["Flipkart · from your rate card (Seller Hub, 17 Nov 2026)",[
+    ["fkTier","Seller tier adjustment on the fixed fee ₹","Rate card: Bronze pays ₹10 more than Silver/Gold on every band. New accounts are Bronze. Diamond is lower still (blankets above ₹1,500: ₹25 instead of ₹116)"],
+    ["fkFixB1500","Fixed fee – blankets/comforters above ₹1,500 (Silver/Gold)","Rate card: ₹116; Bronze ₹126. Up to ₹1,500 it is ₹0 (Bronze ₹10). This single fee replaces forward shipping"],
+    ["fkFixO1500","Fixed fee – bedsheets, pillows, curtains above ₹1,500","Rate card: ₹16; Bronze ₹26"],
+    ["fkFixO1000","Fixed fee – same, ₹1,001 to 1,500","Rate card: ₹20; Bronze ₹30"],
+    ["fkFixO500","Fixed fee – pillows only, ₹501 to 1,000","Rate card: ₹10; Bronze ₹20"],
+    ["fkShipFlat","Forward shipping per order ₹","Your rate card shows none for seller fulfilment or FBF. Leave 0 unless a settlement shows one"],
+    ["fkCodFee","Collection fee % of price","Rate card: ₹0 for prepaid and COD"],
+    ["fkPick1","FBF pick & pack, first kg ₹","Rate card: ₹14"],
+    ["fkPickKg","FBF pick & pack per extra kg ₹","Rate card: ₹5"],
+    ["fkStore","FBF storage per unit sold ₹","Not on the rate card; billed separately by the FBF programme"],
+    ["fkRetRate","Customer returns % of orders","On Flipkart a return costs you the reverse pickup (weight, zone, price), the fixed fee and the packing; commission is reversed. Logistics returns (undelivered) cost nothing"],
+    ["fkRevCal","Reverse shipping calibration","1 = the rate card table; use a settlement to adjust"],
     ["fkAds","Advertising % of price","Flipkart PLA"],
-    ["fkRet","Returns / damage allowance % of price","Flipkart charges reverse shipping on returns, so keep this honest"],
   ]],
 ];
 

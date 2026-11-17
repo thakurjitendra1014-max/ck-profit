@@ -7,7 +7,7 @@ state.feeOv=state.feeOv||{};state.feeMap=state.feeMap||{};state.feeNew=state.fee
 state.supp=state.supp||JSON.parse(JSON.stringify(SUPPSEED));
 state.supp.sizes=state.supp.sizes||SUPPSEED.sizes.slice();
 state.supp.lines=state.supp.lines||[];
-state.misc=state.misc||[];
+state.misc=state.misc||[];state.fkMap=state.fkMap||{};
 state.rateMap=state.rateMap||Object.assign({},RATESEED);
 if(!state.m150){state.rateMap=Object.assign({},RATESEED,state.rateMap);state.m150=1}
 state.pk=Object.assign({pid:"500-D",ch:"es",unit:"cm",wunit:"kg"},state.pk||{});
@@ -31,7 +31,10 @@ function hasCost(p){return state.costs[p.id]!=null||p.cost!=null||suppRate(p)!=n
 function costOf(p,s){return state.costs[p.id]!=null?+state.costs[p.id]:autoCost(p,s)}
 function kgOf(p){return state.kgs[p.id]!=null?+state.kgs[p.id]:(p.kg||3)}
 function feeIdOf(p){return (state.feeMap&&state.feeMap[p.id])||p.fee||CATFEE[p.cat]||"other"}
-function feecats(){return FEECATS.concat(state.feeNew||[])}
+function feecats(){return FEECATS.concat(FKCATS).concat(state.feeNew||[])}
+function amzCats(){return feecats().filter(f=>f.mkt!=="flipkart")}
+function fkCats(){return feecats().filter(f=>f.mkt==="flipkart")}
+function fkIdOf(p){return (state.fkMap&&state.fkMap[p.id])||CATFK[p.cat]||"fk_blanket"}
 function feeCat(id){const a=feecats();return a.find(f=>f.id===id)||a[0]}
 function feeBands(id){const o=state.feeOv&&state.feeOv[id];return (o&&o.length)?o:feeCat(id).bands.map(b=>b.slice())}
 function topPct(id){const b=feeBands(id);return b.length?b[b.length-1][1]:0}
@@ -46,16 +49,26 @@ function dw(kg){return +(kg/uwf()).toFixed(state.pk.wunit==="g"?0:state.pk.wunit
 function billedKg(kg){return Math.max(0.5,Math.ceil(kg*2)/2)}
 function volKg(l,b,h){return (+l||0)*(+b||0)*(+h||0)/5000}
 function shipFee(kg,ch,s){s=s||S();
-  if(ch==="fk")return fkShip(kg,"national","nfbf",s);
+  if(ch==="fk")return fkRevShip(kg,"national",1500,s);
   return ch==="fba"?Math.round(slab(kg,s.fbaW1,s.fbaW2,s.fbaW3,s.fbaW4,s.fbaW5)*s.fbaCal)
                    :Math.round(slab(kg,s.esW1,s.esW2,s.esW3,s.esW4,s.esW5)*s.esCal)}
-function fkSlab(kg,w1,w2,w3,w4,w5){kg=Math.max(0.5,Math.ceil(kg*2)/2);if(kg<=0.5)return w1;if(kg<=1)return w2;if(kg<=2)return w3;if(kg<=5)return w4;return w4+w5*Math.ceil(kg-5)}
-function fkShip(kg,zone,fch,s){s=s||S();const z=zone==="local"?"L":zone==="zonal"?"Z":"N";
-  const base=fkSlab(kg,+s["fk"+z+"1"]||0,+s["fk"+z+"2"]||0,+s["fk"+z+"3"]||0,+s["fk"+z+"4"]||0,+s["fk"+z+"5"]||0)*(+s.fkCal||1);
-  return Math.round(base*(fch==="fbf"?(+s.fkFbfCal||1):1))}
-function fkFixed(price,fch,s){s=s||S();const b=price<=500?s.fkFix1:price<=1000?s.fkFix2:s.fkFix3;
-  return Math.max(0,Math.round((+b||0)+(+s.fkTier||0)+(fch==="fbf"?(+s.fkFbfFix||0):0)))}
-function fkComm(price,s){s=s||S();return price<=(+s.fkLine||0)?(+s.fkC1||0):(+s.fkC2||0)}
+function fkPct(p,price){const bs=feeBands(fkIdOf(p));
+  for(let i=0;i<bs.length;i++){const t=bs[i][0];if(t==null||price<=+t)return +bs[i][1]||0}
+  return bs.length?+bs[bs.length-1][1]||0:0}
+function fkFixed(price,p,s){s=s||S();const id=fkIdOf(p);let base;
+  if(id==="fk_blanket")base=price<=1500?0:+s.fkFixB1500||0;
+  else if(id==="fk_pillow")base=price<=500?0:price<=1000?+s.fkFixO500||0:price<=1500?+s.fkFixO1000||0:+s.fkFixO1500||0;
+  else base=price<=1000?0:price<=1500?+s.fkFixO1000||0:+s.fkFixO1500||0;
+  return Math.max(0,Math.round(base+(+s.fkTier||0)))}
+function fkPick(kg,s){s=s||S();return Math.round((+s.fkPick1||0)+(+s.fkPickKg||0)*Math.max(0,Math.ceil(kg-1)))}
+function fkRevShip(kg,zone,price,s){s=s||S();const z=zone==="local"?0:zone==="zonal"?1:2;
+  const T=price<=500?FKREV.lo:price<=1000?FKREV.mid:FKREV.hi;
+  let v;
+  if(kg<=0.5)v=T.b[0][z];else if(kg<=1)v=T.b[1][z];else if(kg<=1.5)v=T.b[2][z];else if(kg<=2)v=T.b[3][z];
+  else if(kg<=3)v=T.b[4][z]+FKREV.add.half[z]*Math.ceil((kg-2)/0.5);
+  else if(kg<=12)v=T.b[5][z]+FKREV.add.kg[z]*Math.ceil(kg-3);
+  else v=T.b[6][z]+FKREV.add.big[z]*Math.ceil(kg-12);
+  return Math.round(v*(+s.fkRevCal||1))}
 const ZONE={local:"Local",zonal:"Zonal",national:"National"};
 function chanName(mkt,ch){
   if(mkt==="amazon")return "Amazon "+(CH[ch]||"");
@@ -93,16 +106,18 @@ function defaultLines(p,ch,mkt,eff,s){
     L.push({k:"ret",label:"Returns / damage allowance",sub:"% or ₹ per unit",type:"pct",val:s.amzRet});
   } else if(mkt==="flipkart"){
     const [fch,zone]=String(ch||"nfbf-national").split("-"), fbf=fch==="fbf";
-    L.push({k:"fkc",label:"Flipkart commission",sub:(eff<=s.fkLine?"0% below ₹"+(+s.fkLine).toLocaleString("en-IN"):"above ₹"+(+s.fkLine).toLocaleString("en-IN"))+" · % or ₹",type:"pct",val:fkComm(eff,s),gstable:true});
-    L.push({k:"fkfix",label:"Fixed fee",sub:(s.fkTier>0?"Bronze tier":s.fkTier<0?"Platinum tier":"Silver / Gold tier")+(fbf?" · FBF":""),type:"amt",val:fkFixed(eff,fch,s),gstable:true});
-    L.push({k:"ship",label:"Flipkart shipping",sub:kg+" kg · "+(ZONE[zone]||"National")+" · ex-GST",type:"amt",val:fkShip(kg,zone,fch,s),gstable:true});
+    const fixed=fkFixed(eff,p,s), pick=fbf?fkPick(kg,s):0, rev=fkRevShip(kg,zone,eff,s);
+    L.push({k:"fkc",label:"Flipkart commission",sub:feeCat(fkIdOf(p)).short+" · % or ₹",type:"pct",val:fkPct(p,eff),gstable:true});
+    L.push({k:"fkfix",label:"Fixed fee",sub:(s.fkTier>0?"Bronze tier":"Silver / Gold tier")+" · covers delivery",type:"amt",val:fixed,gstable:true});
+    if(+s.fkShipFlat>0)L.push({k:"ship",label:"Flipkart shipping",sub:"per order · ex-GST",type:"amt",val:+s.fkShipFlat,gstable:true});
     if(fbf){
-      L.push({k:"pick",label:"FBF pick & pack",sub:"ex-GST",type:"amt",val:+s.fkPick||0,gstable:true});
-      L.push({k:"store",label:"FBF storage per unit",sub:"ex-GST",type:"amt",val:+s.fkStore||0,gstable:true});
+      L.push({k:"pick",label:"FBF pick & pack",sub:kg+" kg · ex-GST",type:"amt",val:pick,gstable:true});
+      if(+s.fkStore>0)L.push({k:"store",label:"FBF storage per unit",sub:"ex-GST",type:"amt",val:+s.fkStore,gstable:true});
     } else L.push({k:"pack",label:"Packaging",sub:"incl. GST",type:"amt",val:s.pack,gstable:true,incl:true});
-    L.push({k:"fkcol",label:"Collection fee",sub:"COD "+(+s.fkCodShare||0)+"% of orders · "+(+s.fkCodFee||0)+"% each",type:"pct",val:+((+s.fkCodShare||0)*(+s.fkCodFee||0)/100).toFixed(2),gstable:true});
+    if(+s.fkCodFee>0)L.push({k:"fkcol",label:"Collection fee",sub:"% or ₹",type:"pct",val:+s.fkCodFee,gstable:true});
     L.push({k:"ads",label:"Advertising",sub:"% or ₹ per unit",type:"pct",val:s.fkAds,gstable:true});
-    L.push({k:"ret",label:"Returns / damage allowance",sub:"% or ₹ per unit",type:"pct",val:s.fkRet});
+    const perRet=rev+fixed+(fbf?pick:(+s.pack||0));
+    L.push({k:"fkret",label:"Customer returns",sub:"% of orders · each costs ₹"+perRet.toLocaleString("en-IN")+" ("+(ZONE[zone]||"National")+" pickup ₹"+rev.toLocaleString("en-IN")+")",type:"pct",val:+s.fkRetRate||0,special:"fkret",base:perRet});
   } else {
     L.push({k:"gw",label:"Payment gateway",sub:"% or ₹",type:"pct",val:s.gw,gstable:true});
     L.push({k:"ship",label:"Courier",sub:kg+" kg · incl. GST",type:"amt",val:Math.round(slab(kg,s.esW1,s.esW2,s.esW3,s.esW4,s.esW5)*s.esCal*1.18),gstable:true,incl:true});
@@ -123,7 +138,7 @@ function gstView(p,ch,mkt,sp,coupon,ov,s,r){
   const sg=+s.supGst||0, items=[];
   if(r.cost)items.push({label:"Purchase from supplier",gst:r.cost-r.cost/(1+sg/100),rate:sg});
   r.lines.forEach(l=>{
-    if(l.type==="cost"||l.special==="rto"||!l.gstable)return;
+    if(l.type==="cost"||l.special==="rto"||l.special==="fkret"||!l.gstable)return;
     const g=l.type==="pct"?r.eff*l.val/100*0.18:(l.incl?l.val-l.val/1.18:l.val*0.18);
     if(g)items.push({label:l.label,gst:g,rate:18});
   });
@@ -149,6 +164,7 @@ function calc(p,ch,mkt,sp,coupon,ov,s){
     else if(l.type==="amt") a=l.incl?l.val/1.18*m:l.val*m;
     if(l.k==="ship")ship=a; if(l.k==="pack")pack=a;
     if(l.special==="rto"){const r=Math.min(l.val,95)/100;a=r/(1-r)*(2*ship+pack)}
+    if(l.special==="fkret")a=l.val/100*(+l.base||0);
     out.push(Object.assign({},l,{amt:a}));
   });
   const costs=out.reduce((t,l)=>t+l.amt,0), profit=net-costs;
@@ -283,7 +299,7 @@ function summaryText(r){
   const SHORT={cost:"Purchase cost",ref:"Referral",close:"Closing fee",
     ship:mkt==="web"?"Courier":mkt==="flipkart"?"FK shipping":(ch==="es"?"Easy Ship":ch==="fba"?"FBA shipping":"Courier"),
     pick:"Pick & pack",store:mkt==="flipkart"?"FBF storage":"FBA storage",pack:"Packaging",ads:"Ads",ret:"Returns",
-    gw:"Gateway",rto:"RTO loss",fkc:"Commission",fkfix:"Fixed fee",fkcol:"Collection"};
+    gw:"Gateway",rto:"RTO loss",fkc:"Commission",fkfix:"Fixed fee",fkcol:"Collection",fkret:"Returns"};
   const num=v=>Math.abs(Math.round(v)).toLocaleString("en-IN");
   const amt=v=>(v<0?"\u2212\u20b9":"\u20b9")+num(v);
   const rows=[];
@@ -413,11 +429,11 @@ function renderProducts(){
   state.pcat=cats.includes(state.pcat)?state.pcat:cats[0];
   fillSelect($("pcat"),cats.map(c=>[c,c]),state.pcat);
   fillSelect($("nCat"),cats.map(c=>[c,c]),state.pcat);
-  fillSelect($("nFee"),feecats().map(f=>[f.id,f.short+"  ("+topPct(f.id)+"%)"]),CATFEE[state.pcat]||"other");
+  fillSelect($("nFee"),amzCats().map(f=>[f.id,f.short+"  ("+topPct(f.id)+"%)"]),CATFEE[state.pcat]||"other");
   const lines=[...new Set(ps.filter(p=>p.cat===state.pcat).map(p=>p.line))];
   $("prodList").innerHTML=lines.map(l=>{
     const items=ps.filter(p=>p.cat===state.pcat&&p.line===l);
-    const fid=feeIdOf(items[0]);
+    const fid=feeIdOf(items[0]),fkid=fkIdOf(items[0]);
     return `<details data-lid="${esc(l)}" ${(prodOpen.has(l)||lines.length===1)?"open":""}><summary>${esc(l)} <span class="tag">${items.length} sizes</span></summary><div class="in">`+
       `<div class="field"><label for="r-${items[0].id}">Supplier rate</label>`+
       `<select id="r-${items[0].id}" data-setrate="${esc(l)}">`+
@@ -425,7 +441,10 @@ function renderProducts(){
       state.supp.lines.map(x=>`<option value="${x.id}" ${state.rateMap[l]===x.id?"selected":""}>${esc(x.name)}</option>`).join("")+`</select></div>`+
       `<div class="field"><label for="f-${items[0].id}">Amazon fee category <span class="unit">${topPct(fid)}% above ₹1,000</span></label>`+
       `<select id="f-${items[0].id}" data-setfee="${items.map(x=>x.id).join(",")}">`+
-      feecats().map(f=>`<option value="${f.id}" ${f.id===fid?"selected":""}>${esc(f.short)}</option>`).join("")+`</select></div>`+
+      amzCats().map(f=>`<option value="${f.id}" ${f.id===fid?"selected":""}>${esc(f.short)}</option>`).join("")+`</select></div>`+
+      `<div class="field"><label for="fk-${items[0].id}">Flipkart vertical <span class="unit">${topPct(fkid)}% at the top band</span></label>`+
+      `<select id="fk-${items[0].id}" data-setfk="${items.map(x=>x.id).join(",")}">`+
+      fkCats().map(f=>`<option value="${f.id}" ${f.id===fkid?"selected":""}>${esc(f.short)}</option>`).join("")+`</select></div>`+
       items.map(p=>{
       const c=costOf(p,s),ov=state.costs[p.id]!=null,sr=suppRate(p);
       const tag=ov?'<span class="tag ok">your rate</span>':sr!=null?'<span class="tag ok">supplier ₹'+sr.toLocaleString("en-IN")+(+state.supp.gst?" +"+(+state.supp.gst)+"%":"")+'</span>':'<span class="tag est">no rate — add cost</span>';
@@ -453,12 +472,12 @@ function renderFees(){
     (bs.length>1?`<button data-fbdel="${f.id}|${i}" title="Remove band">\u00d7</button>`:`<span></span>`)+`</div>`).join("");
   $("feeForm").innerHTML=
     `<div class="field"><label for="feePick">Category</label><select id="feePick">`+
-      all.map(x=>`<option value="${x.id}" ${x.id===f.id?"selected":""}>${esc(x.short)} \u2014 ${topPct(x.id)}%${state.feeOv[x.id]?" (edited)":""}</option>`).join("")+
+      all.map(x=>`<option value="${x.id}" ${x.id===f.id?"selected":""}>${x.mkt==="flipkart"?"Flipkart · ":"Amazon · "}${esc(x.short)} \u2014 ${topPct(x.id)}%${state.feeOv[x.id]?" (edited)":""}</option>`).join("")+
     `</select></div><div class="fbox">`+
-      (f.custom?`<div class="hint">Your own category.</div>`:`<div class="hint">Amazon name: ${f.name}</div>`)+
+      (f.custom?`<div class="hint">Your own category${f.mkt==="flipkart"?" (Flipkart)":""}.</div>`:f.mkt==="flipkart"?`<div class="hint">Flipkart vertical: ${esc(f.name)} · bands are on Order Item Value, the % applies to the seller price</div>`:`<div class="hint">Amazon name: ${f.name}</div>`)+
       (f.note?`<div class="hint">${esc(f.note)}</div>`:"")+rows+
       `<div class="btns"><button class="btn ghost tiny" data-fbadd="${f.id}">Add band</button>`+
-      (edited?`<button class="btn ghost tiny" data-fbreset="${f.id}">Reset to Amazon rate</button>`:"")+
+      (edited?`<button class="btn ghost tiny" data-fbreset="${f.id}">Reset to ${f.mkt==="flipkart"?"rate card":"Amazon rate"}</button>`:"")+
       (f.custom?`<button class="btn ghost tiny" data-fcdel="${f.id}">Delete category</button>`:"")+
     `</div></div>`;
   $("feePick").onchange=e=>{state.feePick=e.target.value;persist();renderFees()};
@@ -517,7 +536,7 @@ function renderPack(){
   $("pkAct").textContent=A?dw(A)+" "+wu:"\u2013";
   $("pkBill").textContent=bill.toFixed(1)+" kg";
   const v=$("pkVerdict");v.className="verdict "+(vol>A?"warn":"good");
-  v.innerHTML=`<div class="label">${ch==="fba"?"FBA":ch==="fk"?"Flipkart (national, you ship)":"Easy Ship"} weight handling</div><div class="big">${rs(fee)}</div>
+  v.innerHTML=`<div class="label">${ch==="fba"?"FBA":ch==="fk"?"Flipkart return pickup (national)":"Easy Ship"} weight handling</div><div class="big">${rs(fee)}</div>
     <div class="meta"><span class="pill ${vol>A?"warn":"good"}">billed at ${bill.toFixed(1)} kg</span><span>${rs(Math.round(fee*1.18))} with GST</span><span>${du(L)}\u00d7${du(B)}\u00d7${du(H)} ${state.pk.unit}</span></div>`;
   const cm3=Math.round(L*B*H);
   $("pkDrive").innerHTML=!vol?"Enter the box dimensions to see the chargeable weight."
@@ -652,6 +671,7 @@ document.addEventListener("click",e=>{
   else if(b.dataset.fcdel){const id=b.dataset.fcdel;
     state.feeNew=state.feeNew.filter(f=>f.id!==id);delete state.feeOv[id];
     Object.keys(state.feeMap).forEach(k=>{if(state.feeMap[k]===id)delete state.feeMap[k]});
+    Object.keys(state.fkMap||{}).forEach(k=>{if(state.fkMap[k]===id)delete state.fkMap[k]});
     state.feePick=null;persist();renderFees();toast("Category deleted")}
   else if(b.dataset.rm){state.custom=state.custom.filter(p=>p.id!==b.dataset.rm);delete state.costs[b.dataset.rm];if(state.sel.pid===b.dataset.rm)state.sel.pid="500-S";persist();renderProducts();toast("Product removed")}
 });
@@ -729,6 +749,7 @@ $("prodList").addEventListener("change",e=>{const t=e.target;
   if(t.dataset.cost){state.costs[t.dataset.cost]=+t.value||0;persist();renderProducts();toast("Cost saved")}
   if(t.dataset.kg){state.kgs[t.dataset.kg]=+t.value||0.5;persist();toast("Weight saved")}
   if(t.dataset.setfee){state.feeMap=state.feeMap||{};t.dataset.setfee.split(",").forEach(id=>state.feeMap[id]=t.value);persist();renderProducts();toast("Fee category saved")}
+  if(t.dataset.setfk){state.fkMap=state.fkMap||{};t.dataset.setfk.split(",").forEach(id=>state.fkMap[id]=t.value);persist();renderProducts();toast("Flipkart vertical saved")}
   if(t.dataset.setrate!=null){const l=t.dataset.setrate;
     if(t.value)state.rateMap[l]=t.value;else delete state.rateMap[l];
     persist();renderProducts();toast(t.value?"Linked to "+(suppLine(t.value)||{}).name:"Rate link removed")}});
@@ -752,7 +773,8 @@ $("afAdd").onclick=()=>{
   if(!nm){toast("Enter a category name");return}
   if(isNaN(hi)){toast("Enter the % above \u20b91,000");return}
   const id="u"+Date.now();
-  state.feeNew.push({id,short:nm,name:nm,bands:[[1000,lo],[null,hi]],note:$("afNote").value.trim(),custom:true});
+  const mk=($("afMkt")&&$("afMkt").value)||"amazon";
+  state.feeNew.push({id,short:nm,name:nm,bands:[[1000,lo],[null,hi]],note:$("afNote").value.trim(),custom:true,mkt:mk});
   ["afName","afHigh","afNote"].forEach(i=>$(i).value="");$("afLow").value=0;
   state.feePick=id;$("afBox").open=false;persist();renderFees();toast("Category added");
 };
@@ -771,4 +793,4 @@ function netBadge(){$("netState").textContent=navigator.onLine?"Comforter King":
 addEventListener("online",netBadge);addEventListener("offline",netBadge);
 netBadge();show("calc");
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
-window.__ck={calc,priceFor,getP,S,volKg,billedKg,shipFee,suppRate,autoCost,costOf,hasCost,gstView,fkShip,fkFixed,fkComm,chanName};
+window.__ck={calc,priceFor,getP,S,volKg,billedKg,shipFee,suppRate,autoCost,costOf,hasCost,gstView,fkPct,fkFixed,fkPick,fkRevShip,fkIdOf,chanName};

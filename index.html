@@ -220,7 +220,7 @@ nav button[aria-current=page] svg{color:var(--gold)}
         <button data-fch="nfbf" aria-pressed="true">You ship (NFBF)</button>
         <button data-fch="fbf" aria-pressed="false">Flipkart ships (FBF)</button>
       </div>
-      <span class="label" style="margin-top:4px">Delivery zone</span>
+      <span class="label" style="margin-top:4px">Delivery zone <span class="unit" style="text-transform:none;letter-spacing:0">changes the return pickup cost only</span></span>
       <div class="seg" id="zoneSeg">
         <button data-zone="local" aria-pressed="false">Local</button>
         <button data-zone="zonal" aria-pressed="false">Zonal</button>
@@ -432,12 +432,15 @@ nav button[aria-current=page] svg{color:var(--gold)}
 
 <section class="view" id="v-set" hidden>
   <div class="card">
-    <div class="cardhead"><h2>Amazon referral fees</h2><button class="eye" data-eye="feeNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
-    <div class="hint" id="feeNote" hidden>Amazon's official rate card, effective 7 Sep 2026. Pick a category to see its price bands: the percentage on each row applies up to the price shown, and the last row covers everything above it. Edit a threshold or a rate whenever Amazon changes it &mdash; every product in that category picks up the new rate on its own. You can also add a category of your own for a product you are thinking about.</div>
+    <div class="cardhead"><h2>Marketplace fee categories</h2><button class="eye" data-eye="feeNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint" id="feeNote" hidden>Amazon entries: the official rate card effective 7 Sep 2026. Flipkart entries: read from your own Seller Hub rate card on 17 Nov 2026 (commission by vertical, on Order Item Value). Pick a category to see its price bands: the percentage on each row applies up to the price shown, and the last row covers everything above it. Edit a threshold or a rate whenever Amazon changes it &mdash; every product in that category picks up the new rate on its own. You can also add a category of your own for a product you are thinking about.</div>
     <div id="feeForm" style="display:grid;gap:10px"></div>
     <details id="afBox"><summary>Add a category</summary><div class="in">
       <div class="hint">Saw a product online and want to check the maths? Read its referral fee off Amazon's rate card and add the category here. It then shows up in the Products tab so you can attach it to a product.</div>
-      <div class="field"><label for="afName">Category name</label><input id="afName" type="text" placeholder="e.g. Table Covers"></div>
+      <div class="row">
+        <div class="field"><label for="afMkt">Marketplace</label><select id="afMkt"><option value="amazon">Amazon</option><option value="flipkart">Flipkart</option></select></div>
+        <div class="field"><label for="afName">Category name</label><input id="afName" type="text" placeholder="e.g. Table Covers"></div>
+      </div>
       <div class="row">
         <div class="field"><label for="afLow">% up to &#8377;1,000</label><input id="afLow" type="number" inputmode="decimal" step="any" value="0"></div>
         <div class="field"><label for="afHigh">% above &#8377;1,000</label><input id="afHigh" type="number" inputmode="decimal" step="any" placeholder="e.g. 12"></div>
@@ -448,7 +451,7 @@ nav button[aria-current=page] svg{color:var(--gold)}
   </div>
   <div class="card">
     <div class="cardhead"><h2>Settings</h2><button class="eye" data-eye="setNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
-    <div class="hint" id="setNote" hidden>These are the default numbers every calculation starts from. They come from your 500 GSM research sheet (verified on Seller Central, 26 Oct 2026) and Amazon.in's fee schedules effective Mar–Sep 2026. Change anything that differs for your account; a one-off change for a single calculation is better made on the Cost breakdown instead.<br><br><b>Flipkart:</b> the 0% commission below &#8377;1,000 and the tier-based fixed fee are confirmed on seller.flipkart.com; the rest of the Flipkart numbers are the best public estimates as of Nov 2026, because the full rate card is only visible inside Seller Hub. Once your seller account is open, copy the real figures in here &mdash; every field is editable.</div>
+    <div class="hint" id="setNote" hidden>These are the default numbers every calculation starts from. They come from your 500 GSM research sheet (verified on Seller Central, 26 Oct 2026) and Amazon.in's fee schedules effective Mar–Sep 2026. Change anything that differs for your account; a one-off change for a single calculation is better made on the Cost breakdown instead.<br><br><b>Flipkart:</b> every number comes from your own account's rate card in Seller Hub (Payments &rarr; Rate Card), read on 17 Nov 2026. It has no separate shipping or collection fee: the fixed fee covers delivery. Re-check it after any Flipkart announcement &mdash; every field is editable.</div>
     <div id="setForm" style="display:grid;gap:10px"></div>
     <div class="btns"><button class="btn ghost small" id="resetSet">Restore defaults</button></div>
   </div>
@@ -471,7 +474,7 @@ nav button[aria-current=page] svg{color:var(--gold)}
       <li><b>Start with what the customer pays</b> — your selling price, minus any coupon.</li>
       <li><b>Take out product GST</b> — 5% up to ₹2,500, 18% above it. This money is collected for the government, so it was never yours. What is left is your <b>net revenue</b>.</li>
       <li><b>Take out the purchase cost</b> — what you pay your supplier for the piece.</li>
-      <li><b>Take out the marketplace's charges</b> — on Amazon: referral fee, closing fee, weight handling, plus pick &amp; pack and storage on FBA. On Flipkart: commission, fixed fee, shipping, collection fee on COD orders, plus pick &amp; pack and storage on FBF.</li>
+      <li><b>Take out the marketplace's charges</b> — on Amazon: referral fee, closing fee, weight handling, plus pick &amp; pack and storage on FBA. On Flipkart: commission (0% up to the band limit for your verticals), the fixed fee that also covers delivery, pick &amp; pack on FBF, and an allowance for customer returns, because each return costs you the reverse pickup.</li>
       <li><b>Take out your own costs</b> — packaging, advertising, a returns allowance, and anything you added under Other expenses.</li>
     </ol>
     <div class="hint">Whatever is left is your <b>profit per unit</b>. Margin is that profit divided by the selling price.</div>
