@@ -57,6 +57,7 @@ function fkPct(p,price){const bs=feeBands(fkIdOf(p));
   return bs.length?+bs[bs.length-1][1]||0:0}
 function fkFixed(price,p,s){s=s||S();const id=fkIdOf(p);let base;
   if(id==="fk_blanket")base=price<=1500?0:+s.fkFixB1500||0;
+  else if(id==="fk_duvet")base=price<=1500?0:+s.fkFixO1500||0;
   else if(id==="fk_pillow")base=price<=500?0:price<=1000?+s.fkFixO500||0:price<=1500?+s.fkFixO1000||0:+s.fkFixO1500||0;
   else base=price<=1000?0:price<=1500?+s.fkFixO1000||0:+s.fkFixO1500||0;
   return Math.max(0,Math.round(base+(+s.fkTier||0)))}

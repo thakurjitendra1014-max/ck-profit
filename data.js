@@ -101,11 +101,11 @@ const RATESEED={
   "300 GSM Reversible (2-in-1)":"g300",
 };
 const FKCATS = [
-  {id:"fk_blanket", mkt:"flipkart", short:"Blankets, quilts, comforters", name:"Blanket (Bed Linen, Blankets & Accessories)", bands:[[2500,0],[null,1]], note:"Comforters and AC comforters sit here. Fixed fee above \u20b91,500 is high because it includes delivery."},
+  {id:"fk_blanket", mkt:"flipkart", short:"Blankets, quilts, comforters", name:"Blanket (Bed Linen, Blankets & Accessories)", bands:[[2500,0],[null,1]], note:"Comforters and AC comforters sit here (Flipkart has no separate comforter vertical; the baby-bedding blanket has the same card). Fixed fee above \u20b91,500 is high because it includes delivery."},
   {id:"fk_bedsheet", mkt:"flipkart", short:"Bedsheets", name:"Bedsheet (Bed Linen, Blankets & Accessories)", bands:[[2500,0],[11000,1],[null,2]], note:""},
   {id:"fk_pillow", mkt:"flipkart", short:"Pillows", name:"Pillow", bands:[[2500,0],[6000,1],[null,7.5]], note:""},
   {id:"fk_curtain", mkt:"flipkart", short:"Curtains", name:"Curtain", bands:[[1000,0],[8000,1],[null,11]], note:""},
-  {id:"fk_duvet", mkt:"flipkart", short:"Duvet covers", name:"Duvet Cover (assumed same as Bedsheet)", bands:[[2500,0],[11000,1],[null,2]], note:"Not read from the rate card; check the Duvet Cover vertical in Seller Hub."},
+  {id:"fk_duvet", mkt:"flipkart", short:"Duvet covers", name:"Duvet Cover (Bed Linen, Blankets & Accessories)", bands:[[2500,0],[3000,1],[null,15]], note:"Read from the rate card 17 Nov 2026. Above \u20b93,000 it jumps to 15%, so keep duvet covers at or below \u20b93,000."},
 ];
 const CATFK={"Comforters":"fk_blanket","AC Comforters":"fk_blanket","Bedsheets":"fk_bedsheet","Duvet Covers":"fk_duvet","Pillows":"fk_pillow","Curtains":"fk_curtain"};
 const FKREV={
