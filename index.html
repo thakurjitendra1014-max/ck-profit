@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CK Profit Calculator</title>
+<meta name="theme-color" content="#1b2140">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CK Profit">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#1b2140; --ink-2:#4a5070; --mute:#7c8199;
+  --bg:#f3f2f7; --card:#ffffff; --line:#dcdbe6; --stitch:#c9c6d9;
+  --gold:#c98a12; --gold-soft:#fbf0d9;
+  --good:#1f7a4d; --good-soft:#e2f3ea; --warn:#a86a00; --warn-soft:#fdf1d8; --bad:#b4322c; --bad-soft:#fbe4e2;
+  --head:#1b2140; --head-fg:#f4f2fb;
+  --f-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ink:#ecebf5; --ink-2:#b9bad0; --mute:#8d90a8;
+    --bg:#11131f; --card:#1a1d2d; --line:#2c3047; --stitch:#3a3f5c;
+    --gold:#f0b43c; --gold-soft:#3a2f17;
+    --good:#5fd39a; --good-soft:#163527; --warn:#f4bd55; --warn-soft:#3a2d12; --bad:#ff8a80; --bad-soft:#3d1c1b;
+    --head:#0b0d17; --head-fg:#ecebf5;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;-webkit-text-size-adjust:100%}
+body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--head);z-index:30}
+button,input,select,textarea{font:inherit;color:inherit}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--head);color:var(--head-fg);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:10px}
+header h1{font-family:var(--f-display);font-weight:800;font-size:18px;margin:0;line-height:1.1}
+header h1 small{display:block;font:500 11px var(--f-body);opacity:.65;letter-spacing:.04em;text-transform:uppercase}
+header .crown{width:26px;height:26px;flex:none}
+.mkt{margin-left:auto;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:6px 8px;max-width:50%}
+.mkt svg{width:18px;height:18px;flex:none}
+.mkt select{background:transparent;border:0;color:var(--head-fg);font-weight:600;font-size:13px;padding:0;min-width:0;appearance:auto}
+.mkt select option{color:#111}
+main{max-width:560px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));display:grid;gap:14px}
+.view{display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:12px;min-width:0}
+.stitch{border:1.5px dashed var(--stitch)}
+h2{font-family:var(--f-display);font-weight:700;font-size:16px;margin:0}
+.label{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.hint{font-size:12.5px;color:var(--mute);line-height:1.45}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.field{display:grid;gap:5px;min-width:0}
+.field label{font-size:12.5px;color:var(--ink-2);font-weight:500;display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+input[type=number],input[type=text],select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-width:0;font-variant-numeric:tabular-nums}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;padding:9px 4px;border-radius:8px;font-weight:600;font-size:13px;color:var(--ink-2);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--card)}
+.price-in{font-family:var(--f-display);font-size:28px;font-weight:800;padding:8px 12px;border-radius:12px}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{border:1px dashed var(--stitch);background:transparent;border-radius:8px;padding:6px 9px;font-size:12.5px;cursor:pointer;color:var(--ink-2)}
+.verdict{border-radius:14px;padding:16px;display:grid;gap:4px;border:1.5px dashed transparent}
+.verdict.good{background:var(--good-soft);border-color:var(--good)}
+.verdict.warn{background:var(--warn-soft);border-color:var(--warn)}
+.verdict.bad{background:var(--bad-soft);border-color:var(--bad)}
+.verdict .big{font-family:var(--f-display);font-weight:800;font-size:38px;line-height:1.05;font-variant-numeric:tabular-nums}
+.verdict.good .big{color:var(--good)} .verdict.warn .big{color:var(--warn)} .verdict.bad .big{color:var(--bad)}
+.verdict .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px;color:var(--ink-2)}
+.pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;letter-spacing:.03em}
+.pill.good{background:var(--good);color:var(--card)} .pill.warn{background:var(--warn);color:var(--card)} .pill.bad{background:var(--bad);color:var(--card)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--bg);border-radius:10px;padding:10px;display:grid;gap:2px;min-width:0}
+.stat b{font-family:var(--f-display);font-size:17px;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--mute)}
+.bd{display:grid;gap:6px}
+.bl{display:grid;grid-template-columns:1fr 92px 84px;gap:8px;align-items:center;font-size:13.5px}
+.bl.ro{grid-template-columns:1fr 84px}
+.bl .k{color:var(--ink-2);min-width:0}
+.bl .k small{display:block;color:var(--mute);font-size:11px}
+.bl input{padding:7px 8px;border-radius:8px;text-align:right;font-size:13.5px}
+.bl input.ov{border-color:var(--gold);background:var(--gold-soft)}
+.bl .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--bad);white-space:nowrap}
+.bl .v.pos{color:var(--ink)}
+.bl.tot{border-top:1px dashed var(--stitch);padding-top:8px;font-weight:700}
+.bl.tot .v{color:var(--ink)}
+.unit{font-size:11px;color:var(--mute);margin-left:3px}
+.eye{border:0;background:transparent;padding:3px;margin:-3px;cursor:pointer;color:var(--mute);line-height:0;flex:none;border-radius:6px}
+.eye svg{width:16px;height:16px;display:block}
+.eye[aria-expanded=true]{color:var(--gold)}
+.cardhead{display:flex;align-items:center;gap:8px}
+.cardhead h2,.cardhead .label{margin-right:auto}
+.lblrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.lblrow label{font-size:12.5px;color:var(--ink-2);font-weight:500}
+.bl.two{grid-template-columns:1fr 62px 84px}
+.bl.wide{grid-template-columns:1fr 84px 84px}
+.bl input.rev{color:var(--ink);font-weight:600}
+.bl input.amt{color:var(--bad);font-weight:600}
+.fbox{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:9px}
+ol.steps{margin:0;padding-left:21px;display:grid;gap:8px;font-size:12.5px;color:var(--mute);line-height:1.5}
+ol.steps b{color:var(--ink-2)}
+ol.steps::marker{color:var(--gold)}
+.eg{background:var(--bg);border-radius:10px;padding:11px 12px;font-size:12.5px;line-height:1.7;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tip{background:var(--bg);border-radius:10px;padding:11px 12px;display:grid;gap:7px;font-size:13px}
+.tip+.tip{margin-top:8px}
+.tip .th{display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-weight:600;color:var(--ink)}
+.tip .th em{font-style:normal;color:var(--good);font-weight:700;white-space:nowrap}
+.tip .opt{display:grid;grid-template-columns:auto 1fr auto;gap:4px 9px;align-items:baseline;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tip .opt b{font-weight:600;color:var(--ink)}
+.tip .opt span.d{color:var(--mute)}
+.tip.up .th em{color:var(--warn)}
+.dimrow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:10px;background:var(--bg);border-radius:10px;font-size:13px;align-items:center}
+.dimrow+.dimrow{margin-top:8px}
+.dimrow small{color:var(--mute)}
+.pkpick{display:grid;gap:10px}
+.rbox{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:8px}
+.rbox+.rbox{margin-top:8px}
+.rhead{display:flex;gap:6px;align-items:center}
+.rhead input{flex:1;padding:8px 10px;font-weight:600}
+.rhead button{border:1px solid var(--line);background:transparent;border-radius:8px;cursor:pointer;color:var(--mute);padding:7px 10px;flex:none}
+.rcols{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.rcols span{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mute);font-weight:600;display:block;margin-bottom:3px;text-align:center}
+.rcols input{padding:8px 4px;border-radius:8px;text-align:center;font-size:13px}
+.chiprow{display:grid;gap:5px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 12px;font-size:12.5px;line-height:1.3;cursor:pointer;color:var(--ink-2);font-weight:500;text-align:left;max-width:100%}
+.chips button[aria-pressed=true]{background:var(--ink);color:var(--card);border-color:var(--ink);font-weight:600}
+.chips button[aria-pressed=true] small{color:var(--card);opacity:.7}
+.chips small{display:block;font-size:10.5px;color:var(--mute)}
+.btn{border:0;border-radius:11px;padding:12px 14px;font-weight:700;cursor:pointer;background:var(--ink);color:var(--card);text-decoration:none;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.wa{background:#25d366;color:#fff}
+.btn.small{padding:8px 11px;font-size:13px}
+.btn.tiny{padding:3px 8px;font-size:11px;border-radius:7px}
+.btn svg{width:18px;height:18px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.tablewrap{overflow-x:auto;margin:0 -4px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 6px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);border-bottom:1px solid var(--line)}
+tbody tr{border-bottom:1px dashed var(--line)}
+td.g{color:var(--good);font-weight:600} td.w{color:var(--warn);font-weight:600} td.b{color:var(--bad);font-weight:600}
+tr.me td{background:var(--gold-soft)}
+.prod{display:grid;gap:8px;padding:12px 0;border-bottom:1px dashed var(--line)}
+.prod:last-child{border-bottom:0}
+.prod .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.prod .t b{font-family:var(--f-display);font-size:15px}
+.tag{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--bg);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+.tag.est{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.tag.ok{background:var(--good-soft);color:var(--good);border-color:transparent}
+.hist{display:grid;gap:8px}
+.hrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px;background:var(--bg);border-radius:10px;font-size:13.5px}
+.hrow .p{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.hrow small{color:var(--mute)}
+details{border:1px solid var(--line);border-radius:12px;padding:0 12px}
+details summary{cursor:pointer;font-weight:600;font-size:14px;padding:11px 0;list-style:none;display:flex;justify-content:space-between}
+details summary::after{content:"+";color:var(--mute)} details[open] summary::after{content:"–"}
+details .in{display:grid;gap:12px;padding:0 0 12px}
+.chk{display:flex;gap:10px;align-items:center;font-weight:500;font-size:14px}
+.chk input{width:20px;height:20px;flex:none}
+.fb{display:grid;grid-template-columns:1fr 72px 60px 12px 26px;gap:6px;align-items:center;font-size:13px}
+.fb span{color:var(--ink-2)}
+.fb input{padding:7px 8px;border-radius:8px;text-align:right;font-size:13px}
+.fb button{border:1px solid var(--line);background:transparent;border-radius:8px;cursor:pointer;color:var(--mute);padding:6px 0}
+.fcat summary .tag{margin-left:auto}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(5,1fr);padding:6px max(4px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px))}
+nav button{border:0;background:transparent;display:grid;justify-items:center;gap:3px;padding:6px 1px;font-size:10.5px;font-weight:600;color:var(--mute);cursor:pointer;border-radius:10px;min-width:0}
+nav button svg{width:22px;height:22px}
+nav button[aria-current=page]{color:var(--ink)}
+nav button[aria-current=page] svg{color:var(--gold)}
+.toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 16px;border-radius:10px;font-size:13.5px;z-index:40;opacity:0;transition:opacity .2s;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.soon{background:var(--warn-soft);border:1.5px dashed var(--warn);border-radius:14px;padding:16px;display:grid;gap:6px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <svg class="crown" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 23 6 10l6 6 4-9 4 9 6-6 2 13z" fill="#f0b43c"/><rect x="4" y="24" width="24" height="3.5" rx="1.5" fill="#f0b43c"/></svg>
+  <h1>CK Profit<small id="netState">Comforter King</small></h1>
+  <label class="mkt" title="Marketplace">
+    <span id="mktIcon"></span>
+    <select id="mkt" aria-label="Marketplace">
+      <option value="amazon">Amazon</option>
+      <option value="flipkart">Flipkart</option>
+      <option value="web">Own website</option>
+    </select>
+  </label>
+</header>
+
+<main>
+<section class="view" id="v-calc">
+  <div class="soon" id="soonBox" hidden>
+    <b>Flipkart calculator is coming soon</b>
+    <div class="hint">Flipkart's commission, collection and shipping fee tables will be added in the next update. Switch to Amazon or Own website for now.</div>
+  </div>
+  <div class="card" id="calcCard">
+    <div class="field"><label for="cat">Category</label><select id="cat"></select></div>
+    <div class="field"><label for="line">Product</label><select id="line"></select></div>
+    <div class="field"><label for="size">Size</label><select id="size"></select></div>
+    <div class="field" id="fulfilWrap">
+      <span class="label">Fulfilment</span>
+      <div class="seg" id="chSeg">
+        <button data-ch="es" aria-pressed="true">Easy Ship</button>
+        <button data-ch="fba" aria-pressed="false">FBA</button>
+        <button data-ch="self" aria-pressed="false">Self Ship</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="sp">Selling price ₹</label>
+        <input id="sp" class="price-in" type="number" inputmode="numeric" min="0" step="1">
+      </div>
+      <div class="field">
+        <label for="coupon">Coupon / discount ₹</label>
+        <input id="coupon" class="price-in" type="number" inputmode="numeric" min="0" step="1" value="0">
+      </div>
+    </div>
+    <div class="quick" id="quick"></div>
+    <div class="field">
+      <div class="lblrow"><label for="cost">Purchase cost per unit ₹ <span class="unit">incl. supplier GST</span></label><button class="eye" data-eye="costHint" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <input id="cost" type="number" inputmode="numeric" min="0" step="1">
+      <div class="hint" id="costHint" hidden></div>
+    </div>
+  </div>
+
+  <div class="verdict" id="verdict" aria-live="polite"></div>
+
+  <div class="card">
+    <div class="cardhead"><span class="label">Price targets</span><button class="eye" data-eye="compareHint" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <div class="stats">
+      <div class="stat"><span>Break-even price</span><b id="sBE">–</b></div>
+      <div class="stat"><span id="sFloorL">Price for 15%</span><b id="sFloor">–</b></div>
+      <div class="stat"><span id="sGoodL">Price for 20%</span><b id="sGood">–</b></div>
+    </div>
+    <div class="hint" id="compareHint" hidden></div>
+  </div>
+
+  <div class="card">
+    <div class="cardhead">
+      <h2>Cost breakdown</h2>
+      <button class="eye" data-eye="bdNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button class="btn ghost tiny" id="resetOv" hidden>Reset edits</button>
+    </div>
+    <div class="hint" id="bdNote" hidden>Every line is editable for this calculation — including customer pays, product GST % and purchase cost. Percentage rows also take a rupee amount: type either one and the other follows. Edited values are highlighted; defaults come from Settings.<br><br><span id="gstHint"></span></div>
+    <div class="bd" id="breakdown"></div>
+  </div>
+
+  <div class="card">
+    <div class="cardhead"><h2>Other expenses</h2><button class="eye" data-eye="miscNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint" id="miscNote" hidden>Anything you pay per unit that the breakdown does not already cover &mdash; labour, transport to the hub, stitching, inserts, a photographer, a sample you gave away. Each row becomes its own line in the Cost breakdown and in anything you share, so you can see what it costs you. Tick <b>GST paid</b> only if you get a GST invoice for it: then the 18% inside that amount comes back to you as input tax credit, exactly like Amazon's fees. Leave it unticked for cash expenses, and the full amount is counted.</div>
+    <div id="miscForm"></div>
+    <div class="btns"><button class="btn ghost small" id="miscAdd">Add an expense</button></div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="calcName">Name this calculation <span class="unit">optional</span></label>
+      <input id="calcName" type="text" placeholder="e.g. Diwali price test" maxlength="60">
+    </div>
+    <div class="hint">The name shows up in Saved calculations and at the top of anything you share.</div>
+  </div>
+
+  <div class="btns">
+    <a class="btn wa" id="waBtn" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5.3-.5c.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.2-.3-.3-.6-.4M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2m0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2"/></svg>Share on WhatsApp</a>
+    <button class="btn ghost" id="copyBtn">Copy summary</button>
+    <button class="btn ghost" id="saveBtn">Save</button>
+  </div>
+
+  <div class="card" id="histCard">
+    <h2>Saved calculations</h2>
+    <div class="hist" id="hist"></div>
+  </div>
+</section>
+
+<section class="view" id="v-ladder" hidden>
+  <div class="card">
+    <h2 id="ladTitle">Price ladder</h2>
+    <div class="hint">Profit at each price point for the selected product, channel, coupon and your edited cost lines. Green = 20%+, amber = 10–20%, red = below 10%.</div>
+    <div class="row">
+      <div class="field"><label for="lFrom">From ₹</label><input id="lFrom" type="number" inputmode="numeric" value="1499"></div>
+      <div class="field"><label for="lStep">Step ₹</label><input id="lStep" type="number" inputmode="numeric" value="100"></div>
+    </div>
+    <div class="tablewrap"><table><thead><tr><th>Price</th><th>Customer pays</th><th>Profit</th><th>Margin</th><th>Net GST</th></tr></thead><tbody id="ladBody"></tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="cardhead"><h2 id="gstTitle">GST at this price</h2><button class="eye" data-eye="gstNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint" id="gstNote" hidden>GST is not one of your costs &mdash; you collect it from the customer and hand it over. <b>Output GST</b> is the tax sitting inside the price the customer paid. <b>Input GST</b> is the tax you already paid inside your purchase, Amazon's fees, packaging and ads; because you are GST registered you claim that back as input tax credit. You deposit only the difference, the <b>net GST</b>. So a higher price does not just move your profit &mdash; above the &#8377;2,500 line the product rate goes from 5% to 18%, and the Net GST column in the ladder shows exactly how much more you start depositing. A price in the 5% band often collects less GST than you have already paid on the fees and the piece itself; then there is nothing to deposit and the leftover credit carries forward to the next sale, which is why the figure can read as credit instead. Amazon separately deducts TCS on your sales and deposits it against your GSTIN, which reduces what you pay in cash when you file; the exact figure is in your GST portal ledger, not here.</div>
+    <div class="stats">
+      <div class="stat"><span>Output GST collected</span><b id="gOut">&ndash;</b></div>
+      <div class="stat"><span>Input GST claimed</span><b id="gIn">&ndash;</b></div>
+      <div class="stat"><span id="gNetL">Net GST to deposit</span><b id="gNet">&ndash;</b></div>
+    </div>
+    <div class="bd" id="gstRows"></div>
+  </div>
+  <div class="card">
+    <h2>All channels at this price</h2>
+    <div class="tablewrap"><table><thead><tr><th>Channel</th><th>Profit</th><th>Margin</th><th>Break-even</th></tr></thead><tbody id="chBody"></tbody></table></div>
+  </div>
+</section>
+
+<section class="view" id="v-prod" hidden>
+  <div class="card">
+    <div class="cardhead"><h2>Supplier rates</h2><button class="eye" data-eye="suppNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint" id="suppNote" hidden>What your supplier charges you, per GSM and per bed size. Every number here is editable &mdash; renegotiate a rate and just type the new one, and every calculation that uses that line follows it. Link a product line to a rate below, in the catalogue. A product with no rate linked has no cost until you type one in, so its profit will read too high.</div>
+    <div id="suppForm"></div>
+    <div class="chk" style="margin-top:4px"><input type="checkbox" id="suppGstOn"> <label for="suppGstOn" style="font-size:13.5px;cursor:pointer">Supplier adds GST on top of these rates</label></div>
+    <div class="field" id="suppGstRow"><label for="suppGst">GST the supplier adds %</label><input id="suppGst" type="number" inputmode="decimal" step="any" min="0"></div>
+    <div class="btns"><button class="btn ghost small" id="suppAdd">Add a rate line</button><button class="btn ghost small" id="suppReset">Restore the quoted rates</button></div>
+  </div>
+  <div class="card">
+    <h2>Product catalogue</h2>
+    <div class="hint">Purchase cost comes from the supplier rate linked to each product line above. Comforters and AC comforters are linked. For anything else, type what you actually pay in the Cost box on that size &mdash; the app never guesses a cost.</div>
+    <div class="field"><label for="pcat">Category</label><select id="pcat"></select></div>
+    <div id="prodList"></div>
+  </div>
+  <div class="card">
+    <h2>Add a product</h2>
+    <div class="row">
+      <div class="field"><label for="nCat">Category</label><select id="nCat"></select></div>
+      <div class="field"><label for="nName">Product line</label><input id="nName" type="text" placeholder="e.g. 400 GSM Comforter"></div>
+    </div>
+    <div class="field"><label for="nFee">Amazon fee category</label><select id="nFee"></select></div>
+    <div class="row3">
+      <div class="field"><label for="nSize">Size</label><input id="nSize" type="text" placeholder="Double"></div>
+      <div class="field"><label for="nCost">Cost ₹</label><input id="nCost" type="number" inputmode="numeric"></div>
+      <div class="field"><label for="nKg">Ship weight kg</label><input id="nKg" type="number" inputmode="decimal" step="0.5" value="3"></div>
+    </div>
+    <div class="row"><div class="field"><label for="nRef">Razzai Amazon price ₹</label><input id="nRef" type="number" inputmode="numeric"></div>
+    <div class="field"><label for="nWeb">Razzai website price ₹</label><input id="nWeb" type="number" inputmode="numeric"></div></div>
+    <button class="btn" id="addProd">Add product</button>
+  </div>
+</section>
+
+<section class="view" id="v-pack" hidden>
+  <div class="card">
+    <div class="cardhead"><h2>Package calculator</h2><button class="btn ghost tiny" id="pkView">Chips</button><button class="eye" data-eye="pkNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint" id="pkNote" hidden>Couriers bill you on <b>chargeable weight</b>: the higher of what the parcel actually weighs and its <b>volumetric weight</b>, which is L&times;B&times;H in cm divided by 5000. A light, bulky comforter is almost always billed on volume, so the box size decides the cost, not the product. Amazon then rounds the chargeable weight up to the next half kilo and charges the slab rate from Settings. Dimensions below start as a working-back from the shipping weight on file &mdash; measure your real box and correct them. Measure in whichever unit suits you &mdash; everything is converted to centimetres underneath, because that is the unit Amazon's formula uses.</div>
+    <div class="pkpick" id="pkSlim">
+      <div class="field"><label for="pkCatS">Category</label><select id="pkCatS"></select></div>
+      <div class="field" id="pkLineSRow"><label for="pkLineS">Product</label><select id="pkLineS"></select></div>
+      <div class="field" id="pkSizeSRow"><label for="pkSizeS">Size</label><select id="pkSizeS"></select></div>
+    </div>
+    <div class="pkpick" id="pkChips" hidden>
+      <div class="chiprow"><span class="label">Category</span><div class="chips" id="pkCat"></div></div>
+      <div class="chiprow" id="pkLineRow"><span class="label">Product</span><div class="chips" id="pkLine"></div></div>
+      <div class="chiprow" id="pkSizeRow"><span class="label">Size</span><div class="chips" id="pkSize"></div></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="pkUnit">Measure in</label><select id="pkUnit">
+        <option value="cm">Centimetres (cm)</option>
+        <option value="in">Inches (in)</option>
+        <option value="mm">Millimetres (mm)</option>
+        <option value="ft">Feet (ft)</option>
+      </select></div>
+      <div class="field"><label for="pkWUnit">Weight in</label><select id="pkWUnit">
+        <option value="kg">Kilograms (kg)</option>
+        <option value="g">Grams (g)</option>
+        <option value="lb">Pounds (lb)</option>
+      </select></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label for="pkL">Length <span class="unit" data-ul>cm</span></label><input id="pkL" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div class="field"><label for="pkB">Width <span class="unit" data-ul>cm</span></label><input id="pkB" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div class="field"><label for="pkH">Height <span class="unit" data-ul>cm</span></label><input id="pkH" type="number" inputmode="decimal" step="any" min="0"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="pkKg">Actual weight <span class="unit" data-uw>kg</span></label><input id="pkKg" type="number" inputmode="decimal" step="any" min="0" placeholder="weigh it"></div>
+      <div class="field">
+        <span class="label">Channel</span>
+        <div class="seg" id="pkSeg">
+          <button data-pch="es" aria-pressed="true">Easy Ship</button>
+          <button data-pch="fba" aria-pressed="false">FBA</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="verdict" id="pkVerdict" aria-live="polite"></div>
+
+  <div class="card">
+    <div class="stats">
+      <div class="stat"><span>Volumetric</span><b id="pkVol">–</b></div>
+      <div class="stat"><span>Actual</span><b id="pkAct">–</b></div>
+      <div class="stat"><span>Billed at</span><b id="pkBill">–</b></div>
+    </div>
+    <div class="hint" id="pkDrive"></div>
+  </div>
+
+  <div class="card">
+    <div class="cardhead"><h2>What to change</h2><button class="eye" data-eye="pkTipNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint" id="pkTipNote" hidden>Each option below is a single change that moves the parcel into a cheaper slab on its own &mdash; shrink any one of the three and the saving is the same. Height is usually the one you can win on with bedding: compress harder, or use a vacuum bag. The last card shows how much room you still have before the cost steps up, which is useful when you are thinking of a bigger box or adding a free gift.</div>
+    <div id="pkTips"></div>
+  </div>
+
+  <div class="card">
+    <h2>Saved box sizes</h2>
+    <div class="hint">Save the real box for a product once and this page remembers it. &ldquo;Use in profit&rdquo; copies the billed weight into the product so every profit calculation uses it.</div>
+    <div class="field">
+      <label for="pkName">Name this box <span class="unit">optional</span></label>
+      <input id="pkName" type="text" placeholder="e.g. Tall carton, vacuum packed" maxlength="60">
+    </div>
+    <div class="btns">
+      <button class="btn small" id="pkSave">Save this box</button>
+      <button class="btn ghost small" id="pkUse">Use in profit</button>
+    </div>
+    <div id="pkList"></div>
+  </div>
+</section>
+
+<section class="view" id="v-set" hidden>
+  <div class="card">
+    <div class="cardhead"><h2>Amazon referral fees</h2><button class="eye" data-eye="feeNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint" id="feeNote" hidden>Amazon's official rate card, effective 7 Sep 2026. Pick a category to see its price bands: the percentage on each row applies up to the price shown, and the last row covers everything above it. Edit a threshold or a rate whenever Amazon changes it &mdash; every product in that category picks up the new rate on its own. You can also add a category of your own for a product you are thinking about.</div>
+    <div id="feeForm" style="display:grid;gap:10px"></div>
+    <details id="afBox"><summary>Add a category</summary><div class="in">
+      <div class="hint">Saw a product online and want to check the maths? Read its referral fee off Amazon's rate card and add the category here. It then shows up in the Products tab so you can attach it to a product.</div>
+      <div class="field"><label for="afName">Category name</label><input id="afName" type="text" placeholder="e.g. Table Covers"></div>
+      <div class="row">
+        <div class="field"><label for="afLow">% up to &#8377;1,000</label><input id="afLow" type="number" inputmode="decimal" step="any" value="0"></div>
+        <div class="field"><label for="afHigh">% above &#8377;1,000</label><input id="afHigh" type="number" inputmode="decimal" step="any" placeholder="e.g. 12"></div>
+      </div>
+      <div class="field"><label for="afNote">Note <span class="unit">optional</span></label><input id="afNote" type="text" placeholder="Where you read this rate"></div>
+      <button class="btn small" id="afAdd">Add category</button>
+    </div></details>
+  </div>
+  <div class="card">
+    <div class="cardhead"><h2>Settings</h2><button class="eye" data-eye="setNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint" id="setNote" hidden>These are the default numbers every calculation starts from. They come from your 500 GSM research sheet (verified on Seller Central, 26 Oct 2026) and Amazon.in's fee schedules effective Mar–Sep 2026. Change anything that differs for your account; a one-off change for a single calculation is better made on the Cost breakdown instead.</div>
+    <div id="setForm" style="display:grid;gap:10px"></div>
+    <div class="btns"><button class="btn ghost small" id="resetSet">Restore defaults</button></div>
+  </div>
+  <div class="card">
+    <div class="cardhead"><h2>Backup &amp; restore</h2><button class="eye" data-eye="bkNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint" id="bkNote" hidden>Everything &mdash; your costs, weights, fee edits, added categories and saved calculations &mdash; lives in this phone's browser only. Copy a backup before switching phones or clearing browser data, then paste it on the new phone.</div>
+    <div class="btns">
+      <button class="btn small" id="copyBk">Copy backup</button>
+      <button class="btn ghost small" id="showRestore">Restore</button>
+    </div>
+    <div id="restoreBox" hidden style="display:grid;gap:8px">
+      <textarea id="bkText" rows="4" style="font-size:12px" placeholder="Paste backup text here"></textarea>
+      <button class="btn small" id="doRestore">Restore now</button>
+    </div>
+  </div>
+  <div class="card stitch">
+    <div class="cardhead"><h2>How profit is calculated</h2><button class="eye" data-eye="howNote" aria-expanded="false" aria-label="Show note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v5" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg></button></div>
+    <div class="hint">Five steps, in the same order as the Cost breakdown.</div>
+    <ol class="steps">
+      <li><b>Start with what the customer pays</b> — your selling price, minus any coupon.</li>
+      <li><b>Take out product GST</b> — 5% up to ₹2,500, 18% above it. This money is collected for the government, so it was never yours. What is left is your <b>net revenue</b>.</li>
+      <li><b>Take out the purchase cost</b> — what you pay your supplier for the piece.</li>
+      <li><b>Take out Amazon's charges</b> — referral fee, closing fee, weight handling, and pick &amp; pack plus storage on FBA.</li>
+      <li><b>Take out your own costs</b> — packaging, advertising, a returns allowance, and anything you added under Other expenses.</li>
+    </ol>
+    <div class="hint">Whatever is left is your <b>profit per unit</b>. Margin is that profit divided by the selling price.</div>
+    <div class="eg" id="howEg"></div>
+    <div class="hint" id="howNote" hidden><b>The finer points.</b><br>
+      • GST is judged on the price <i>after</i> the coupon, so a ₹2,600 price with a ₹200 coupon stays in the 5% band.<br>
+      • Amazon charges 18% GST on top of all its own fees. With ITC on, that 18% is left out of the costs here because you claim it back as credit — same for the supplier's 5% on your purchase cost. Turn ITC off in Settings and everything is counted with its GST. The Ladder tab shows the whole GST picture for any price.<br>
+      • Shipping is an estimate from chargeable weight &mdash; the higher of actual weight and volumetric (L×B×H cm ÷ 5000) &mdash; using the weight slabs in Settings, scaled by the calibration factor. Whenever you have the real quote, type it straight into the shipping line on the Cost breakdown.<br>
+      • On your own website, RTO loss assumes a failed order costs you shipping both ways plus the packaging.</div>
+  </div>
+</section>
+</main>
+
+<nav>
+  <button data-v="calc" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg>Calculator</button>
+  <button data-v="ladder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16M7 16v-3M12 16V9M17 16V5"/></svg>Ladder</button>
+  <button data-v="prod"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 7l8-4 8 4-8 4z"/><path d="M4 7v10l8 4 8-4V7M12 11v10"/></svg>Products</button>
+  <button data-v="pack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8.5 12 4l9 4.5v7L12 20l-9-4.5z"/><path d="M3 8.5 12 13l9-4.5M12 13v7"/></svg>Packing</button>
+  <button data-v="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Settings</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
